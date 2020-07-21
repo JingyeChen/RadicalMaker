@@ -73,9 +73,9 @@ class Generator:
 
             for i in range(length):
                 self.rm.clean_waiting_list()
-                sequence = self.sg.generate()
+                sequence, mode, label_sequence = self.sg.generate()
                 # print(sequence)
-                label.extend(sequence)
+                label.extend(label_sequence)
                 label.extend(['<eos>'])
 
                 self.rm.set_color(color)
@@ -118,7 +118,9 @@ class SequenceGenerator:
 
     def __init__(self):
         self.structure = '⿻⿸⿰⿴⿺⿱⿵⿹⿶⿷⿳⿲'
-        self.structure_two = '⿻⿸⿰⿴⿺⿱⿵⿹⿶⿷' + 45 * '⿰⿱'
+        self.structure_two_easy = '⿰⿱'
+        self.structure_two_hard = '⿻⿸⿴⿺⿵⿹⿶⿷'
+        self.structure_two = '⿻⿸⿰⿴⿺⿱⿵⿹⿶⿷'
         self.structure_three = '⿳⿲'
 
     def get_template(self):
@@ -217,6 +219,57 @@ class SequenceGenerator:
         dict = sorted(dict.items(), key=lambda x: x[1], reverse=True)
         return dict
 
+    def get_hard_word(self,rely_dict):
+
+        f = open('./resource/ids.txt', 'r', encoding='utf-8')
+        lines = f.readlines()
+        lines = [i.strip() for i in lines]
+
+        hard_word = []
+
+        for line in lines:
+            word = line[0]
+            sequence = line[2:].split()
+
+            for i in self.structure_two_hard:
+                if i in sequence:
+                    hard_word.append([word,sequence])
+                    break
+
+        # ⿰⿱
+        hard_word,hard_sequence = hard_word[random.randint(0,len(hard_word)-1)]
+
+        choice = random.randint(0,3)
+        if choice == 0:
+            rely_radical = rely_dict[('⿱',0)]
+            length = len(rely_radical)
+            rely_choice = random.randint(0, length - 1)
+            paint_sequence = ['⿱',hard_word,rely_radical[rely_choice]]
+            label_sequence = ['⿱',*hard_sequence,rely_radical[rely_choice]]
+        if choice == 1:
+            rely_radical = rely_dict[('⿱', 1)]
+            length = len(rely_radical)
+            rely_choice = random.randint(0, length - 1)
+            paint_sequence = ['⿱', rely_radical[rely_choice],hard_word]
+            label_sequence = ['⿱', rely_radical[rely_choice],*hard_sequence]
+        if choice == 2:
+            rely_radical = rely_dict[('⿰', 0)]
+            length = len(rely_radical)
+            rely_choice = random.randint(0, length - 1)
+            paint_sequence = ['⿰', hard_word, rely_radical[rely_choice]]
+            label_sequence = ['⿰', *hard_sequence, rely_radical[rely_choice]]
+        if choice == 3:
+            rely_radical = rely_dict[('⿰', 1)]
+            length = len(rely_radical)
+            rely_choice = random.randint(0, length - 1)
+            paint_sequence = ['⿰', rely_radical[rely_choice],hard_word]
+            label_sequence = ['⿰', rely_radical[rely_choice],*hard_sequence]
+
+
+        return (paint_sequence,'hard',label_sequence)
+
+
+
     def generate(self):
 
         # # 统计模板长度的频数
@@ -234,6 +287,15 @@ class SequenceGenerator:
         template = self.get_template()
         rely_dict = self.get_rely()
 
+        # 选择简单模式或困难模式
+        mode = random.randint(0,2)
+        if mode == 2:
+            # 使用困难模式的符号
+            sequence = self.get_hard_word(rely_dict)
+            return sequence
+
+
+
         # 随机搜索一个模板
         template_length = len(template)
         choice = random.randint(0, template_length)
@@ -244,8 +306,8 @@ class SequenceGenerator:
 
         for i in template_chosen:
             if i == 2:
-                choice = random.randint(0, 99)
-                sequence.append(self.structure_two[choice])
+                choice = random.randint(0, 1)
+                sequence.append(self.structure_two_easy[choice])
             elif i == 3:
                 choice = random.randint(0, 1)
                 sequence.append(self.structure_three[choice])
@@ -294,7 +356,7 @@ class SequenceGenerator:
                 if stack[-1][1] == 0:
                     stack.pop()
 
-        return sequence
+        return (sequence,'easy',sequence)
 
 
 class RadicalMaker:
@@ -614,7 +676,7 @@ class RadicalMaker:
 
     def make_composed_word(self, radical_sequence, width=500, height=500):
         # radical sequence 最好给一个list
-        assert self.sequence_is_valid(radical_sequence), "Sequence is invalid!"
+        # assert self.sequence_is_valid(radical_sequence), "Sequence is invalid!"
 
         # 用栈实现
         # 作为起始画布，不断地划分成小区域
@@ -1067,3 +1129,7 @@ if __name__ == '__main__':
     tg = Generator()
     tg.help()
     tg.generate(num=-1,color=(255,0,0))
+
+    # sg = SequenceGenerator()
+    # result = sg.get_hard_word()
+    # print(result)
