@@ -298,7 +298,7 @@ class SequenceGenerator:
 
         # 随机搜索一个模板
         template_length = len(template)
-        choice = random.randint(0, template_length)
+        choice = random.randint(0, template_length-1)
         template_chosen = template[choice]
         # print(template_chosen)
 
